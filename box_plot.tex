@@ -1,0 +1,115 @@
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage{pgfplots}
+\usepgfplotslibrary{statistics,colorbrewer}
+\usepackage{pgfplotstable}
+
+\pgfplotsset{compat=1.18, cycle list/Set1-8}
+
+% =========================
+% Customization
+% =========================
+% Edit these names/colors first when reusing this figure.
+\newcommand{\MethodOneName}{MPPI}
+\newcommand{\MethodTwoName}{TransformerMPPI}
+\newcommand{\MethodOneColor}{blue!65}
+\newcommand{\MethodTwoColor}{red!65}
+
+% Update these labels to match your sample sizes/settings.
+\def\SampleLabels{50,100,200,300,400,500}
+\def\SampleTickPositions{2,5,8,11,14,17}
+
+% Layout controls.
+\def\NumSamples{6}
+\def\FirstSampleX{2}
+\def\SampleSpacing{3}
+\def\BoxShift{0.55}
+
+% Replace the CSV values below with your own experiment results.
+\begin{filecontents*}{method_one.csv}
+22,26,30,17,45,17
+10,15,13,12,17,12
+12,30,6,57,10,57
+33,38,36,25,24,25
+\end{filecontents*}
+
+\begin{filecontents*}{method_two.csv}
+20,20,30,17,45,17
+8,11,13,12,17,12
+10,50,6,57,10,57
+28,30,36,25,24,25
+\end{filecontents*}
+
+\pgfplotsset{
+  custom box legend/.style={
+    legend image code/.code={
+      \draw[fill=#1, fill opacity=0.6, draw=black]
+        (0cm,-0.18cm) rectangle (0.24cm,0.18cm);
+      \draw[black] (0.12cm,-0.30cm) -- (0.12cm,0.30cm);
+      \draw[black] (0.03cm,-0.30cm) -- (0.21cm,-0.30cm);
+      \draw[black] (0.03cm,0.30cm) -- (0.21cm,0.30cm);
+    }
+  }
+}
+
+\begin{document}
+\begin{tikzpicture}
+  \pgfplotstableread[col sep=comma]{method_one.csv}\methodone
+  \pgfplotstableread[col sep=comma]{method_two.csv}\methodtwo
+
+  \pgfmathtruncatemacro{\LastSampleIndex}{\NumSamples-1}
+
+  \begin{axis}[
+    boxplot/draw direction=y,
+    axis x line=bottom,
+    axis y line=left,
+    x axis line style={->,thick},
+    y axis line style={-},
+    enlarge y limits,
+    ymajorgrids,
+    xlabel={Samples},
+    ylabel={Cost},
+    xtick={\SampleTickPositions},
+    xticklabels={\SampleLabels},
+    xticklabel style={align=center,font=\small,rotate=60},
+    xtick style={draw=none},
+    xmin=0,
+    xmax={\FirstSampleX + (\NumSamples-1)*\SampleSpacing + 2},
+    clip=false,
+    legend style={
+      at={(0.5,-0.25)},
+      anchor=north,
+      legend columns=2,
+      /tikz/every even column/.append style={column sep=0.4cm}
+    },
+    legend cell align={left}
+  ]
+    \foreach \n in {0,...,\LastSampleIndex} {
+      \pgfmathtruncatemacro{\sample}{\n+1}
+      \pgfmathsetmacro{\xcenter}{\FirstSampleX + (\sample-1)*\SampleSpacing}
+
+      \addplot+[
+        boxplot,
+        fill=\MethodOneColor,
+        opacity=0.6,
+        draw=black,
+        boxplot/draw position={\xcenter-\BoxShift},
+        forget plot
+      ] table[y index=\n] {\methodone};
+
+      \addplot+[
+        boxplot,
+        fill=\MethodTwoColor,
+        opacity=0.6,
+        draw=black,
+        boxplot/draw position={\xcenter+\BoxShift},
+        forget plot
+      ] table[y index=\n] {\methodtwo};
+    }
+
+    \addlegendimage{custom box legend=\MethodOneColor}
+    \addlegendentry{\MethodOneName}
+    \addlegendimage{custom box legend=\MethodTwoColor}
+    \addlegendentry{\MethodTwoName}
+  \end{axis}
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,78 @@
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage{tikz}
+\usepackage{listofitems}
+\usetikzlibrary{positioning,calc,arrows.meta}
+
+% =========================
+% Customization
+% =========================
+% Set the architecture here: one number per layer.
+\readlist\LayerSizes{4,5,5,5,3}
+
+% Layout controls.
+\def\LayerXSpacing{2.2}
+\def\LayerYSpacing{1.3}
+\def\NodeSize{21pt}
+
+% Labels.
+\newcommand{\InputLayerLabel}{input layer}
+\newcommand{\HiddenLayerLabel}{hidden layers}
+\newcommand{\OutputLayerLabel}{output layer}
+\newcommand{\NodeLabel}[2]{$a_{#2}^{(#1)}$}
+
+% Color palette.
+\colorlet{InputBorder}{green!45!black}
+\colorlet{InputFill}{green!20}
+\colorlet{HiddenBorder}{blue!55!black}
+\colorlet{HiddenFill}{blue!18}
+\colorlet{OutputBorder}{red!65!black}
+\colorlet{OutputFill}{red!20}
+\colorlet{EdgeColor}{blue!45!black}
+
+\tikzset{
+  input node/.style={circle,draw=InputBorder,fill=InputFill,thick,minimum size=\NodeSize},
+  hidden node/.style={circle,draw=HiddenBorder,fill=HiddenFill,thick,minimum size=\NodeSize},
+  output node/.style={circle,draw=OutputBorder,fill=OutputFill,thick,minimum size=\NodeSize},
+  connect/.style={line width=0.7pt,EdgeColor}
+}
+
+\begin{document}
+\begin{tikzpicture}[x=\LayerXSpacing cm, y=\LayerYSpacing cm]
+  \pgfmathtruncatemacro{\TotalLayers}{\LayerSizeslen}
+  \pgfmathtruncatemacro{\HiddenLabelLayer}{max(2,int((\TotalLayers+1)/2))}
+
+  \foreachitem \LayerCount \in \LayerSizes {
+    \pgfmathtruncatemacro{\LayerIndex}{\LayerCountcnt}
+    \pgfmathtruncatemacro{\PrevLayerIndex}{\LayerIndex-1}
+
+    \def\CurrentNodeStyle{hidden node}
+    \ifnum\LayerIndex=1
+      \def\CurrentNodeStyle{input node}
+    \fi
+    \ifnum\LayerIndex=\TotalLayers
+      \def\CurrentNodeStyle{output node}
+    \fi
+
+    \foreach \NeuronIndex in {1,...,\LayerCount} {
+      \pgfmathsetmacro{\y}{(\LayerCount+1)/2 - \NeuronIndex}
+      \node[\CurrentNodeStyle] (L\LayerIndex-\NeuronIndex) at (\LayerIndex,\y)
+        {\NodeLabel{\PrevLayerIndex}{\NeuronIndex}};
+
+      \ifnum\LayerIndex>1
+        \foreach \PrevNeuron in {1,...,\LayerSizes[\PrevLayerIndex]} {
+          \draw[connect,white,line width=1.4pt]
+            (L\PrevLayerIndex-\PrevNeuron) -- (L\LayerIndex-\NeuronIndex);
+          \draw[connect]
+            (L\PrevLayerIndex-\PrevNeuron) -- (L\LayerIndex-\NeuronIndex);
+        }
+      \fi
+    }
+  }
+
+  \node[above=4pt,text=InputBorder] at (L1-1.north) {\InputLayerLabel};
+  \ifnum\TotalLayers>2
+    \node[above=4pt,text=HiddenBorder] at (L\HiddenLabelLayer-1.north) {\HiddenLayerLabel};
+  \fi
+  \node[above=4pt,text=OutputBorder] at (L\TotalLayers-1.north) {\OutputLayerLabel};
+\end{tikzpicture}
+\end{document}

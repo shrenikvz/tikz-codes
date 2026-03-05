@@ -1,0 +1,99 @@
+\documentclass[tikz,border=3mm]{standalone}
+\usepackage{listofitems}
+\usetikzlibrary{positioning,calc,arrows.meta,shapes.misc}
+
+% =========================
+% Customization
+% =========================
+\newcommand{\CellLabel}{RNN Cell}
+\newcommand{\LayerOneName}{1st Layer}
+\newcommand{\LayerTwoName}{2nd Layer}
+\newcommand{\LayerKName}{Kth Layer}
+\newcommand{\PredictionLabel}{$\hat{y}$}
+
+% Input labels, one entry per time step.
+\readlist\TimeLabels{$u(t-k)$,$u(t-k-1)$,$u(t-k-2)$,$u(t-1)$}
+
+% Spacing controls.
+\def\StepSpacing{1.15cm}
+\def\GapBeforeLastStep{2.0cm}
+\def\LayerOneToTwoGap{1.5cm}
+\def\LayerTwoToKGap{2.0cm}
+\def\InputLabelGap{0.55cm}
+
+% Colors.
+\colorlet{LayerOneColor}{yellow!25}
+\colorlet{LayerTwoColor}{blue!20}
+\colorlet{LayerKColor}{green!22}
+
+\tikzset{
+  cell/.style={
+    draw,
+    rounded rectangle,
+    minimum height=1.0cm,
+    minimum width=1.7cm,
+    font=\small
+  },
+  temporal/.style={->,>=Latex,line width=0.8pt},
+  temporal skip/.style={temporal,dashed},
+  vertical/.style={->,>=Latex,line width=0.8pt},
+  vertical skip/.style={vertical,dashed}
+}
+
+\begin{document}
+\begin{tikzpicture}
+  \pgfmathtruncatemacro{\NumSteps}{\TimeLabelslen}
+  \pgfmathtruncatemacro{\LastStep}{\NumSteps}
+  \pgfmathtruncatemacro{\LastTransitionStart}{\NumSteps-1}
+
+  % Base row (1st layer).
+  \node[cell,fill=LayerOneColor] (L1-1) {\CellLabel};
+  \foreach \Step in {2,...,\NumSteps} {
+    \pgfmathtruncatemacro{\Prev}{\Step-1}
+    \ifnum\Step=\NumSteps
+      \node[cell,fill=LayerOneColor,right=\GapBeforeLastStep of L1-\Prev] (L1-\Step) {\CellLabel};
+    \else
+      \node[cell,fill=LayerOneColor,right=\StepSpacing of L1-\Prev] (L1-\Step) {\CellLabel};
+    \fi
+  }
+
+  % 2nd and Kth layers.
+  \foreach \Step in {1,...,\NumSteps} {
+    \node[cell,fill=LayerTwoColor,above=\LayerOneToTwoGap of L1-\Step] (L2-\Step) {\CellLabel};
+    \node[cell,fill=LayerKColor,above=\LayerTwoToKGap of L2-\Step] (LK-\Step) {\CellLabel};
+  }
+
+  % Horizontal temporal connections.
+  \foreach \Step in {1,...,\LastTransitionStart} {
+    \pgfmathtruncatemacro{\Next}{\Step+1}
+    \ifnum\Next=\NumSteps
+      \draw[temporal skip] (L1-\Step) -- (L1-\Next);
+      \draw[temporal skip] (L2-\Step) -- (L2-\Next);
+      \draw[temporal skip] (LK-\Step) -- (LK-\Next);
+    \else
+      \draw[temporal] (L1-\Step) -- (L1-\Next);
+      \draw[temporal] (L2-\Step) -- (L2-\Next);
+      \draw[temporal] (LK-\Step) -- (LK-\Next);
+    \fi
+  }
+
+  % Vertical layer connections.
+  \foreach \Step in {1,...,\NumSteps} {
+    \draw[vertical] (L1-\Step) -- (L2-\Step);
+    \draw[vertical skip] (L2-\Step) -- (LK-\Step);
+  }
+
+  % Layer labels.
+  \node[left=0.6cm of L1-1,align=right] {\LayerOneName};
+  \node[left=0.6cm of L2-1,align=right] {\LayerTwoName};
+  \node[left=0.6cm of LK-1,align=right] {\LayerKName};
+
+  % Input labels.
+  \foreach \Step in {1,...,\NumSteps} {
+    \node[below=\InputLabelGap of L1-\Step] {\TimeLabels[\Step]};
+  }
+
+  % Prediction arrow.
+  \draw[vertical] (LK-\LastStep.north) -- ++(0,1.0) node[above] {\PredictionLabel};
+\end{tikzpicture}
+\end{document}
